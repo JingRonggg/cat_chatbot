@@ -2,11 +2,10 @@ from fastapi import FastAPI
 from typing import List, Dict
 
 from models import ChatRequest
-from chat import chat_completion
+from chat_services import chat_completion
 
 app = FastAPI()
 
-# Single user's message history
 message_history: List[Dict[str, str]] = []
 
 @app.get("/")
