@@ -12,5 +12,6 @@ export default async function chatCompletion(prompt: string, user: string) {
         }),
     });
     const data = await response.json();
+    console.log(data);
     return data;
 }
