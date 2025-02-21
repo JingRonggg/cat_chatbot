@@ -85,6 +85,8 @@ def chat_completion(prompt: str, user_name: str = "user") -> List[Dict[str, str]
         tools=tool,
         model="gpt-4o-mini",
     )
+
+    # thread creation
     thread = client.beta.threads.create()
     content = f" `{prompt}`. Can you help me?"
 
