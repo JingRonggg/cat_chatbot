@@ -9,6 +9,15 @@ load_dotenv()
 CAT_API_KEY = os.getenv("CAT_API_KEY")
 
 def get_cat_image(limit: int = 1) -> List[str]:
+    """
+    Fetches cat images from The Cat API.
+    
+    Args:
+        limit (int, optional): The number of cat images to fetch. Defaults to 1.
+    
+    Returns:
+        List[str]: A list of URLs pointing to cat images.
+    """
     url = "https://api.thecatapi.com/v1/images/search"
     headers = {
         "x-api-key": CAT_API_KEY
@@ -21,10 +30,21 @@ def get_cat_image(limit: int = 1) -> List[str]:
     data = response.json()
     return [cat["url"] for cat in data]
 
-def chat_completion(prompt: str, user_name: str = "user", message_history: List[Dict[str, str]] = []) -> List[Dict[str, str]]:
+def chat_completion(prompt: str, user_name: str = "user") -> List[Dict[str, str]]:
+    """
+    Generates a chat response using OpenAI's GPT model with a cat-themed assistant.
+    
+    Args:
+        prompt (str): The user's input message.
+        user_name (str, optional): The name to address the user. Defaults to "user".
+    
+    Returns:
+        List[Dict[str, str]]: A list of messages from the assistant, including text responses and cat images if applicable.
+    """
     client = OpenAI()
 
-    tool = [{
+    tool = [
+    {
         "type": "function",
         "function": {
             "name": "get_cat_image",
@@ -39,7 +59,13 @@ def chat_completion(prompt: str, user_name: str = "user", message_history: List[
             },
             "strict": True
         }
-    }]
+    },
+    {
+        "type": "code_interpreter"
+    }
+    ]
+
+    ## Assistant creation
     assistant = client.beta.assistants.create(
         name="Purrfect Productivity Pal",
         instructions='''
@@ -60,12 +86,9 @@ def chat_completion(prompt: str, user_name: str = "user", message_history: List[
         model="gpt-4o-mini",
     )
     thread = client.beta.threads.create()
-    if message_history:
-        history_content = "\n".join([f"{msg['role']}: {msg['content']}" for msg in message_history])
-        content = f"{history_content}\nuser: `{prompt}`. Can you help me? provide me with just the link will be sufficient"
-    else:
-        content = f" `{prompt}`. Can you help me? provide me with just the link will be sufficient"
+    content = f" `{prompt}`. Can you help me?"
 
+    ### Create a message
     message = client.beta.threads.messages.create(
         thread_id=thread.id,
         role="user",
@@ -74,11 +97,20 @@ def chat_completion(prompt: str, user_name: str = "user", message_history: List[
 
     print(f"this is message: {message}")
 
-    run = client.beta.threads.runs.create_and_poll(
-        thread_id=thread.id,
-        assistant_id=assistant.id,
-        instructions=f"Please address the user as {user_name}. The user has a premium account."
-    )
+    try:
+        run = client.beta.threads.runs.create_and_poll(
+            thread_id=thread.id,
+            assistant_id=assistant.id,
+            instructions=f"Please address the user as {user_name}. The user has a premium account."
+        )
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 400:
+            return [{
+                'role': 'assistant',
+                'content': "Could you repeat yourself?"
+            }]
+        else:
+            raise e
 
     if run.status == 'requires_action':
         tool_call = run.required_action.submit_tool_outputs.tool_calls[0]
@@ -98,14 +130,8 @@ def chat_completion(prompt: str, user_name: str = "user", message_history: List[
         messages = client.beta.threads.messages.list(
             thread_id=thread.id
         )
+        message_history = []
         for msg in messages:
-            if msg.role == 'user':
-                for content_block in msg.content:
-                    if content_block.type == 'text':
-                        message_history.append({
-                            'role': msg.role,
-                            'content': f"`{prompt}`. Can you help me? provide me with just the link will be sufficient"
-                        })
             if msg.role == 'assistant':
                 for content_block in msg.content:
                     if content_block.type == 'text':
@@ -115,4 +141,4 @@ def chat_completion(prompt: str, user_name: str = "user", message_history: List[
                             })
         return message_history
     else:
-        return run.status
+        return [{'role': 'assistant', 'content': run.status}]

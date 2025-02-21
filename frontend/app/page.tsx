@@ -9,6 +9,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [username, setUsername] = useState("");
   const [user, setUser] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleUsernameSubmit = () => {
@@ -20,7 +21,9 @@ export default function Home() {
     const updatedMessages = [...messages, { role: "user", message: prompt }];
     setMessages(updatedMessages);
     setPrompt("");
+    setIsLoading(true);
     const response = await chatCompletion(currentPrompt, user);
+    setIsLoading(false);
     setMessages([...updatedMessages, { role: "assistant", message: response.message_history }]);
   };
 
@@ -51,12 +54,17 @@ export default function Home() {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="chat chat-end">
+                <div className="chat-bubble">Loading...</div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
           <input
             type="text"
             className="input input-bordered w-full m-10"
-            placeholder="what is hamada equation?"
+            placeholder="Show me a picture of a cat"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={async (event) => {

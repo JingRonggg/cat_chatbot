@@ -74,7 +74,7 @@ Ensure you have the following installed on your machine:
 ## Running the Application
 
 1. **Ensure both the backend and frontend servers are running:**
-    - Backend server should be running on the specified port (e.g., `http://localhost:5000`).
+    - Backend server should be running on the specified port (e.g., `http://localhost:8000`).
     - Frontend server should be running on the specified port (e.g., `http://localhost:3000`).
 
 2. **Open your browser and navigate to the frontend server URL:**
